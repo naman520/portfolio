@@ -23,6 +23,17 @@ export default function Home() {
             <img className='w-[200px] md:w-[300px] h-[200px] md:h-[300px] object-cover rounded-full border-4 border-gray-900' src={img1} alt='Naman Gupta' />
           </div>
         </div>
+        <div className='text-white text-center text-lg pt-5'>
+            Check out My &nbsp;
+            <span className=' underline hover:text-yellow-500'>
+                <a  href="https://leetcode.com/u/namangupta2360/">LeetCode</a> 
+            </span> 
+            &nbsp; and &nbsp;
+            <span className=' underline hover:text-green-600'>
+                <a href="https://www.geeksforgeeks.org/user/namangupta2360/">GFG</a> 
+            </span>
+              &nbsp; Account
+        </div>
         <div className='text-3xl font-bold text-gray-200 text-center my-4 pt-10'>
           My Tech Stack
         </div>
