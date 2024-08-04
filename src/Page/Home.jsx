@@ -3,6 +3,7 @@ import img1 from '../assets/imgportfolio.jpg';
 import '../Page/home.css';
 import Project from './Project';
 import FloatingNav from './FloatingNav';
+import Footer from './Footer';
 
 export default function Home() {
   return (
@@ -12,16 +13,16 @@ export default function Home() {
         <div>
           <FloatingNav />
         </div>
-        <div className='relative max-w-xl mx-auto'>
-          <img className='w-full h-[700px] object-cover rounded-md pt-10' src={img1} alt='Mountain View' />
-          <div className='absolute inset-0 bg-gray-700 opacity-60 rounded-md'></div>
-          <div className='absolute inset-0 flex items-center justify-center'>
-            <h2 className='intro bg-gradient-to-r from-green-500 to-yellow-400 bg-clip-text text-transparent text-3xl font-bold z-10'>
-              Myself, Naman Gupta, B.Tech Final Year Student
+        <div className='relative max-w-6xl mx-auto flex flex-col md:flex-row items-center space-y-6 md:space-y-0 md:space-x-8 pt-20'>
+          <div className='md:flex-1 text-center md:text-left'>
+            <h2 className='intro bg-gradient-to-r from-green-500 to-yellow-400 bg-clip-text text-transparent text-md md:text-4xl font-bold'>
+              Myself, Naman Gupta, B.Tech Final Year Student. Proficient in Python, MERN Stack, Data Analysis and DSA
             </h2>
           </div>
+          <div className='md:flex-1'>
+            <img className='w-[200px] md:w-[300px] h-[200px] md:h-[300px] object-cover rounded-full border-4 border-gray-900' src={img1} alt='Naman Gupta' />
+          </div>
         </div>
-
         <div className='text-3xl font-bold text-gray-200 text-center my-4 pt-10'>
           My Tech Stack
         </div>
@@ -58,6 +59,9 @@ export default function Home() {
             <Project />
           </div>
         </div>   
+        <div>
+          <Footer />
+        </div>
       </div>
       
     </>
