@@ -13,7 +13,7 @@ export default function Footer() {
             </span>
         </p>
         <p><span>
-                My contact +91 8920563009
+                <a href="mailto:namangupta2360@gmail.com">My contact </a>
             </span></p>
       </div>
     </>
