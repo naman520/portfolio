@@ -25,6 +25,6 @@ export const ProjectData = [
         title: 'Blog',
             description:'A MERN STACK based project where one create an account and read blogs of his/her choice written by different writters. One can also create blogs and can edit them too. This project includes CRUD features for everyone. ',
         gitHubLink: 'https://github.com/naman520/blog',
-        DeploymentLink:'NA'
+        DeploymentLink:'https://blog-five-sage-18.vercel.app/'
     },
 ]

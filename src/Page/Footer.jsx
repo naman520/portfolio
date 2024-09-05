@@ -7,9 +7,7 @@ export default function Footer() {
         <p> &copy; {new Date().getFullYear()}
             &nbsp;
             <span>
-                <a href="https://naman-gupta.vercel.app/" className='text-white hover:underline'>
-                    Naman Gupta
-                </a>
+                <a href="https://naman-gupta.vercel.app/" className='text-white hover:underline'>Naman Gupta</a>
             </span>
         </p>
         <p><span>

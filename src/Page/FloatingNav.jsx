@@ -7,7 +7,7 @@ export default function FloatingNav() {
         <li><a href="mailto:namangupta2360@gmail.com" className='text-white hover:underline'>Email</a></li>
         <li><a href="https://www.linkedin.com/in/naman-gupta-914a6822a/" className='text-white hover:underline'>LinkedIn</a></li>
         <li><a href="https://github.com/naman520" className='text-white hover:underline'>GitHub</a></li>
-        <li><a href="https://drive.google.com/file/d/1jMM_hb8IS4DrCJzi6xnOn-sAD9_-fSuo/view?usp=sharing" className='text-white hover:underline'>Resume</a></li>
+        <li><a href="https://drive.google.com/file/d/1PIIffYhRnax86zE1ke2UjXKNyxzw01CX/view?usp=sharing" className='text-white hover:underline'>Resume</a></li>
       </ul>
     </div>
   );
