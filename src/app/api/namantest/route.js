@@ -1,13 +1,15 @@
 // app/api/proxy-mno/route.js
 
-const TARGET_URL = 'https://bigbucket.online/namantest/login.php';
+// app/api/proxy-mno/route.js
+
+const TARGET_URL = 'https://bigbucket.online/namanTest/dashboard.php';
 
 const commonHeaders = {
   'User-Agent':
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
   'Accept': 'text/html,application/xhtml+xml',
   'Accept-Language': 'en-US,en;q=0.9',
-  'Referer': 'https://bigbucket.online/namantest',
+  'Referer': 'https://bigbucket.online/namanTest',
 };
 
 export async function GET(req) {
