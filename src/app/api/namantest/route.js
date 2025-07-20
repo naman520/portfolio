@@ -1,7 +1,5 @@
 // app/api/proxy-mno/route.js
 
-// app/api/proxy-mno/route.js
-
 const TARGET_URL = 'https://bigbucket.online/namanTest/dashboard.php';
 
 const commonHeaders = {
