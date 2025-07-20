@@ -4,7 +4,7 @@ const nextConfig = {
     return [
       {
         source: '/namantest',
-        destination: 'https://bma-dholera-sir.onrender.com/namantest', // Proxy to the API route
+        destination: '/api/namantest', // Proxy to the API route
       },
     ];
   },
