@@ -1,6 +1,6 @@
 // app/api/proxy-mno/route.js
 
-const TARGET_URL = 'https://bigbucket.online/namantest/config.php';
+const TARGET_URL = 'https://bigbucket.online/namantest/login.php';
 
 const commonHeaders = {
   'User-Agent':
