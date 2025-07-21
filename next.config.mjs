@@ -3,8 +3,30 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        source: '/namantest/:path*',
+        destination: '/api/namantest?path=/:path*',
+      },
+      {
         source: '/namantest',
-        destination: 'https://bma-dholera-sir.onrender.com', // Proxy to the API route
+        destination: '/api/namantest',
+      },
+    ];
+  },
+  // Optional: Add headers for better proxy support
+  async headers() {
+    return [
+      {
+        source: '/api/namantest/:path*',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+        ],
       },
     ];
   },

@@ -1,7 +1,9 @@
-// app/api/proxy-mno/route.js
+// app/api/namantest/route.js
 
-const TARGET_URL = 'https://bigbucket.online/namanTest/dashboard.php';
-const BASE_URL = 'https://bigbucket.online/namanTest';
+const TARGET_DOMAIN = 'https://bigbucket.online';
+const TARGET_BASE_PATH = '/namanTest';
+const TARGET_URL = `${TARGET_DOMAIN}${TARGET_BASE_PATH}/dashboard.php`; // Start with login.php
+const BASE_URL = `${TARGET_DOMAIN}${TARGET_BASE_PATH}`;
 
 const commonHeaders = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
@@ -24,64 +26,166 @@ function forwardCookies(clientRequest, targetHeaders) {
 function extractSetCookies(response) {
   const setCookieHeaders = [];
   
-  // Get all set-cookie headers from the response
-  response.headers.forEach((value, key) => {
-    if (key.toLowerCase() === 'set-cookie') {
-      setCookieHeaders.push(value);
-    }
-  });
+  // Handle both single and multiple set-cookie headers
+  const setCookieHeader = response.headers.get('set-cookie');
+  if (setCookieHeader) {
+    // Split multiple cookies if they're in a single header
+    const cookies = setCookieHeader.split(',').map(cookie => cookie.trim());
+    setCookieHeaders.push(...cookies);
+  }
+  
+  // Also check for raw headers if available
+  if (response.headers.raw && response.headers.raw()['set-cookie']) {
+    setCookieHeaders.push(...response.headers.raw()['set-cookie']);
+  }
   
   return setCookieHeaders;
 }
 
-// Helper function to modify HTML content to fix relative URLs
-function modifyHtmlContent(html, baseUrl) {
-  return html
-    .replace(/action="([^"]*?)"/g, (match, action) => {
-      if (action.startsWith('http')) return match;
-      if (action.startsWith('/')) return `action="${baseUrl}${action}"`;
-      return `action="${baseUrl}/${action}"`;
-    })
-    .replace(/href="([^"]*?)"/g, (match, href) => {
-      if (href.startsWith('http') || href.startsWith('#') || href.startsWith('mailto:')) return match;
-      if (href.startsWith('/')) return `href="/api/proxy-mno?url=${encodeURIComponent(baseUrl + href)}"`;
-      return `href="/api/proxy-mno?url=${encodeURIComponent(baseUrl + '/' + href)}"`;
-    })
-    .replace(/src="([^"]*?)"/g, (match, src) => {
-      if (src.startsWith('http') || src.startsWith('data:')) return match;
-      if (src.startsWith('/')) return `src="${baseUrl}${src}"`;
-      return `src="${baseUrl}/${src}"`;
-    });
+// Enhanced HTML content modifier
+function modifyHtmlContent(html, baseUrl, currentPath = '') {
+  let modifiedHtml = html;
+  
+  // Fix form actions
+  modifiedHtml = modifiedHtml.replace(/action="([^"]*?)"/g, (match, action) => {
+    if (action.startsWith('http')) return match;
+    if (action === '' || action === '.') {
+      return `action="/api/namantest${currentPath}"`;
+    }
+    if (action.startsWith('/')) {
+      return `action="/api/namantest?path=${encodeURIComponent(action)}"`;
+    }
+    return `action="/api/namantest?path=${encodeURIComponent('/' + action)}"`;
+  });
+  
+  // Fix href links
+  modifiedHtml = modifiedHtml.replace(/href="([^"]*?)"/g, (match, href) => {
+    if (href.startsWith('http') || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('javascript:')) {
+      return match;
+    }
+    if (href.startsWith('/')) {
+      return `href="/api/namantest?path=${encodeURIComponent(href)}"`;
+    }
+    if (href === '' || href === '.') {
+      return `href="/api/namantest"`;
+    }
+    return `href="/api/namantest?path=${encodeURIComponent('/' + href)}"`;
+  });
+  
+  // Fix src attributes for resources
+  modifiedHtml = modifiedHtml.replace(/src="([^"]*?)"/g, (match, src) => {
+    if (src.startsWith('http') || src.startsWith('data:') || src.startsWith('//')) return match;
+    if (src.startsWith('/')) {
+      return `src="${baseUrl}${src}"`;
+    }
+    return `src="${baseUrl}/${src}"`;
+  });
+  
+  // Fix background images in CSS
+  modifiedHtml = modifiedHtml.replace(/url\(["']?([^"')]*?)["']?\)/g, (match, url) => {
+    if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('//')) return match;
+    if (url.startsWith('/')) {
+      return `url("${baseUrl}${url}")`;
+    }
+    return `url("${baseUrl}/${url}")`;
+  });
+  
+  // Add base tag to help with relative URLs
+  if (modifiedHtml.includes('<head>')) {
+    modifiedHtml = modifiedHtml.replace('<head>', `<head>\n<base href="${baseUrl}/">`);
+  }
+  
+  return modifiedHtml;
+}
+
+// Helper to construct target URL
+function constructTargetUrl(path) {
+  if (!path || path === '/') {
+    return TARGET_URL; // Default to login.php
+  }
+  
+  // Remove leading slash if present
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  
+  // If it's a full path starting with the base path, use it directly
+  if (path.startsWith(TARGET_BASE_PATH)) {
+    return `${TARGET_DOMAIN}${path}`;
+  }
+  
+  return `${BASE_URL}/${cleanPath}`;
 }
 
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
-    const targetUrl = searchParams.get('url') || TARGET_URL;
+    const requestedPath = searchParams.get('path') || '/';
+    const targetUrl = constructTargetUrl(requestedPath);
+    
+    console.log('GET Request - Target URL:', targetUrl);
     
     const targetHeaders = { ...commonHeaders };
     
     // Forward cookies from client
     forwardCookies(req, targetHeaders);
     
-    // Forward referer
-    const referer = req.headers.get('referer');
-    if (referer) {
-      targetHeaders['Referer'] = BASE_URL;
+    // Set proper referer
+    targetHeaders['Referer'] = BASE_URL + '/';
+    
+    // Forward other important headers
+    const xRequestedWith = req.headers.get('x-requested-with');
+    if (xRequestedWith) {
+      targetHeaders['X-Requested-With'] = xRequestedWith;
     }
 
     const res = await fetch(targetUrl, {
       headers: targetHeaders,
+      redirect: 'manual', // Handle redirects manually
     });
 
+    // Handle redirects
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get('location');
+      if (location) {
+        console.log('Redirect detected:', location);
+        
+        // Convert the redirect location to our proxy format
+        let redirectPath;
+        if (location.startsWith('http')) {
+          // Absolute URL - extract the path
+          const url = new URL(location);
+          redirectPath = url.pathname + url.search + url.hash;
+        } else {
+          // Relative URL
+          redirectPath = location;
+        }
+        
+        // Extract and forward cookies from redirect response
+        const setCookies = extractSetCookies(res);
+        
+        const responseHeaders = {
+          'Location': `/api/namantest?path=${encodeURIComponent(redirectPath)}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        };
+        
+        if (setCookies.length > 0) {
+          responseHeaders['Set-Cookie'] = setCookies;
+        }
+        
+        return new Response(null, {
+          status: 302,
+          headers: responseHeaders,
+        });
+      }
+    }
+
     const html = await res.text();
-    const modifiedHtml = modifyHtmlContent(html, BASE_URL);
+    const modifiedHtml = modifyHtmlContent(html, BASE_URL, requestedPath);
     
     // Extract cookies from target response
     const setCookies = extractSetCookies(res);
     
     const responseHeaders = {
-      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Type': res.headers.get('content-type') || 'text/html; charset=utf-8',
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Pragma': 'no-cache',
       'Expires': '0',
@@ -98,7 +202,7 @@ export async function GET(req) {
     });
   } catch (error) {
     console.error('GET Proxy Error:', error);
-    return new Response('Proxy Error', { status: 500 });
+    return new Response(`Proxy Error: ${error.message}`, { status: 500 });
   }
 }
 
@@ -106,7 +210,11 @@ export async function POST(req) {
   try {
     const body = await req.text();
     const { searchParams } = new URL(req.url);
-    const targetUrl = searchParams.get('url') || TARGET_URL;
+    const requestedPath = searchParams.get('path') || '/';
+    const targetUrl = constructTargetUrl(requestedPath);
+    
+    console.log('POST Request - Target URL:', targetUrl);
+    console.log('POST Body:', body);
 
     const targetHeaders = {
       ...commonHeaders,
@@ -117,29 +225,63 @@ export async function POST(req) {
     // Forward cookies from client
     forwardCookies(req, targetHeaders);
     
-    // Set proper referer for login forms
-    targetHeaders['Referer'] = BASE_URL;
+    // Set proper referer and origin for forms
+    targetHeaders['Referer'] = BASE_URL + '/';
+    targetHeaders['Origin'] = BASE_URL;
     
-    // Forward origin header if present
-    const origin = req.headers.get('origin');
-    if (origin) {
-      targetHeaders['Origin'] = BASE_URL;
+    // Forward X-Requested-With for AJAX requests
+    const xRequestedWith = req.headers.get('x-requested-with');
+    if (xRequestedWith) {
+      targetHeaders['X-Requested-With'] = xRequestedWith;
     }
 
     const res = await fetch(targetUrl, {
       method: 'POST',
       headers: targetHeaders,
       body,
+      redirect: 'manual', // Handle redirects manually
     });
 
+    // Handle redirects (common after login)
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get('location');
+      if (location) {
+        console.log('POST Redirect detected:', location);
+        
+        let redirectPath;
+        if (location.startsWith('http')) {
+          const url = new URL(location);
+          redirectPath = url.pathname + url.search + url.hash;
+        } else {
+          redirectPath = location;
+        }
+        
+        const setCookies = extractSetCookies(res);
+        
+        const responseHeaders = {
+          'Location': `/api/namantest?path=${encodeURIComponent(redirectPath)}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        };
+        
+        if (setCookies.length > 0) {
+          responseHeaders['Set-Cookie'] = setCookies;
+        }
+        
+        return new Response(null, {
+          status: 302,
+          headers: responseHeaders,
+        });
+      }
+    }
+
     const html = await res.text();
-    const modifiedHtml = modifyHtmlContent(html, BASE_URL);
+    const modifiedHtml = modifyHtmlContent(html, BASE_URL, requestedPath);
     
     // Extract cookies from target response
     const setCookies = extractSetCookies(res);
     
     const responseHeaders = {
-      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Type': res.headers.get('content-type') || 'text/html; charset=utf-8',
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Pragma': 'no-cache',
       'Expires': '0',
@@ -156,82 +298,93 @@ export async function POST(req) {
     });
   } catch (error) {
     console.error('POST Proxy Error:', error);
-    return new Response('Proxy Error', { status: 500 });
+    return new Response(`Proxy Error: ${error.message}`, { status: 500 });
   }
 }
 
+// Keep the other HTTP methods simple for now
 export async function PUT(req) {
-  try {
-    const body = await req.text();
-    const { searchParams } = new URL(req.url);
-    const targetUrl = searchParams.get('url') || TARGET_URL;
-
-    const targetHeaders = {
-      ...commonHeaders,
-      'Content-Type': req.headers.get('content-type') || 'application/json',
-    };
-
-    forwardCookies(req, targetHeaders);
-    targetHeaders['Referer'] = BASE_URL;
-
-    const res = await fetch(targetUrl, {
-      method: 'PUT',
-      headers: targetHeaders,
-      body,
-    });
-
-    const html = await res.text();
-    const setCookies = extractSetCookies(res);
-    
-    const responseHeaders = {
-      'Content-Type': 'text/html; charset=utf-8',
-    };
-    
-    if (setCookies.length > 0) {
-      responseHeaders['Set-Cookie'] = setCookies;
-    }
-
-    return new Response(html, {
-      status: res.status,
-      headers: responseHeaders,
-    });
-  } catch (error) {
-    console.error('PUT Proxy Error:', error);
-    return new Response('Proxy Error', { status: 500 });
-  }
+  return handleOtherMethods(req, 'PUT');
 }
 
 export async function DELETE(req) {
+  return handleOtherMethods(req, 'DELETE');
+}
+
+async function handleOtherMethods(req, method) {
   try {
+    const body = method !== 'DELETE' ? await req.text() : undefined;
     const { searchParams } = new URL(req.url);
-    const targetUrl = searchParams.get('url') || TARGET_URL;
+    const requestedPath = searchParams.get('path') || '/';
+    const targetUrl = constructTargetUrl(requestedPath);
 
     const targetHeaders = { ...commonHeaders };
+    
+    if (body && method !== 'DELETE') {
+      targetHeaders['Content-Type'] = req.headers.get('content-type') || 'application/json';
+      targetHeaders['Content-Length'] = Buffer.byteLength(body).toString();
+    }
+
     forwardCookies(req, targetHeaders);
-    targetHeaders['Referer'] = BASE_URL;
+    targetHeaders['Referer'] = BASE_URL + '/';
 
-    const res = await fetch(targetUrl, {
-      method: 'DELETE',
+    const fetchOptions = {
+      method,
       headers: targetHeaders,
-    });
+      redirect: 'manual',
+    };
+    
+    if (body) {
+      fetchOptions.body = body;
+    }
 
-    const html = await res.text();
+    const res = await fetch(targetUrl, fetchOptions);
+    
+    // Handle redirects
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get('location');
+      if (location) {
+        let redirectPath;
+        if (location.startsWith('http')) {
+          const url = new URL(location);
+          redirectPath = url.pathname + url.search + url.hash;
+        } else {
+          redirectPath = location;
+        }
+        
+        const setCookies = extractSetCookies(res);
+        const responseHeaders = {
+          'Location': `/api/namantest?path=${encodeURIComponent(redirectPath)}`,
+        };
+        
+        if (setCookies.length > 0) {
+          responseHeaders['Set-Cookie'] = setCookies;
+        }
+        
+        return new Response(null, {
+          status: 302,
+          headers: responseHeaders,
+        });
+      }
+    }
+
+    const responseText = await res.text();
     const setCookies = extractSetCookies(res);
     
     const responseHeaders = {
-      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Type': res.headers.get('content-type') || 'text/html; charset=utf-8',
     };
     
     if (setCookies.length > 0) {
       responseHeaders['Set-Cookie'] = setCookies;
     }
 
-    return new Response(html, {
+    return new Response(responseText, {
       status: res.status,
       headers: responseHeaders,
     });
   } catch (error) {
-    console.error('DELETE Proxy Error:', error);
-    return new Response('Proxy Error', { status: 500 });
+    console.error(`${method} Proxy Error:`, error);
+    return new Response(`Proxy Error: ${error.message}`, { status: 500 });
   }
 }
