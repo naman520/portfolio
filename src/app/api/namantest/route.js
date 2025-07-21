@@ -1,4 +1,4 @@
-// app/api/landx/route.js
+// app/api/namantest/route.js
 
 const TARGET_DOMAIN = 'https://bigbucket.online';
 const TARGET_BASE_PATH = '/namanTest';
@@ -50,12 +50,12 @@ function modifyHtmlContent(html, baseUrl, currentPath = '') {
   modifiedHtml = modifiedHtml.replace(/action="([^"]*?)"/gi, (match, action) => {
     if (action.startsWith('http') || action.startsWith('//')) return match;
     if (action === '' || action === '.') {
-      return `action="/api/landx${currentPath}"`;
+      return `action="/api/namantest${currentPath}"`;
     }
     if (action.startsWith('/')) {
-      return `action="/api/landx?path=${encodeURIComponent(action)}"`;
+      return `action="/api/namantest?path=${encodeURIComponent(action)}"`;
     }
-    return `action="/api/landx?path=${encodeURIComponent(currentPath + '/' + action)}"`;
+    return `action="/api/namantest?path=${encodeURIComponent(currentPath + '/' + action)}"`;
   });
 
   // Enhanced href handling
@@ -65,12 +65,12 @@ function modifyHtmlContent(html, baseUrl, currentPath = '') {
       return match;
     }
     if (href.startsWith('/')) {
-      return `href="/api/landx?path=${encodeURIComponent(href)}"`;
+      return `href="/api/namantest?path=${encodeURIComponent(href)}"`;
     }
     if (href === '' || href === '.') {
-      return `href="/api/landx?path=${encodeURIComponent(currentPath)}"`;
+      return `href="/api/namantest?path=${encodeURIComponent(currentPath)}"`;
     }
-    return `href="/api/landx?path=${encodeURIComponent(currentPath + '/' + href)}"`;
+    return `href="/api/namantest?path=${encodeURIComponent(currentPath + '/' + href)}"`;
   });
   
   // Fix src attributes for resources
@@ -189,7 +189,7 @@ export async function GET(req) {
         const setCookies = extractSetCookies(res);
         
         const responseHeaders = {
-          'Location': `/api/landx?path=${encodeURIComponent(redirectPath)}`,
+          'Location': `/api/namantest?path=${encodeURIComponent(redirectPath)}`,
           'Cache-Control': 'no-cache, no-store, must-revalidate',
         };
         
@@ -288,7 +288,7 @@ export async function POST(req) {
         const setCookies = extractSetCookies(res);
         
         const responseHeaders = {
-          'Location': `/api/landx?path=${encodeURIComponent(redirectPath)}`,
+          'Location': `/api/namantest?path=${encodeURIComponent(redirectPath)}`,
           'Cache-Control': 'no-cache, no-store, must-revalidate',
         };
         
@@ -388,7 +388,7 @@ async function handleOtherMethods(req, method) {
         
         const setCookies = extractSetCookies(res);
         const responseHeaders = {
-          'Location': `/api/landx?path=${encodeURIComponent(redirectPath)}`,
+          'Location': `/api/namantest?path=${encodeURIComponent(redirectPath)}`,
         };
         
         if (setCookies.length > 0) {
