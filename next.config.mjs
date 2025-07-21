@@ -5,34 +5,34 @@ const nextConfig = {
       // Direct access to specific PHP files
       {
         source: '/logout.php',
-        destination: '/api/landx?path=logout.php',
+        destination: '/api/namantest?path=logout.php',
       },
       {
         source: '/edit.php',
-        destination: '/api/landx?path=edit.php',
+        destination: '/api/namantest?path=edit.php',
       },
       {
         source: '/login.php', 
-        destination: '/api/landx?path=login.php',
+        destination: '/api/namantest?path=login.php',
       },
       {
         source: '/dashboard.php',
-        destination: '/api/landx?path=dashboard.php',
+        destination: '/api/namantest?path=dashboard.php',
       },
-      // General rewrite for LandX-Beta paths
+      // General rewrite for namantest-Beta paths
       {
-        source: '/LandX-Beta/:path*',
-        destination: '/api/landx?path=:path*',
+        source: '/namantest-Beta/:path*',
+        destination: '/api/namantest?path=:path*',
       },
-      // Default landx access
+      // Default namantest access
       {
-        source: '/landx',
-        destination: '/api/landx',
+        source: '/namantest',
+        destination: '/api/namantest',
       },
-      // Catch remaining paths under /api/landx (keep this last)
+      // Catch remaining paths under /api/namantest (keep this last)
       {
-        source: '/api/landx/:path*',
-        destination: '/api/landx?path=:path*',
+        source: '/api/namantest/:path*',
+        destination: '/api/namantest?path=:path*',
       },
     ];
   },
