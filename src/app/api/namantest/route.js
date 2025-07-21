@@ -70,7 +70,7 @@ function modifyHtmlContent(html, baseUrl, currentPath = '') {
     if (href === '' || href === '.') {
       return `href="/api/namantest?path=${encodeURIComponent(currentPath)}"`;
     }
-    return `href="/api/namantest?path=${encodeURIComponent(currentPath + '/' + href)}"`;
+    return `href="/api/namantest?path=${encodeURIComponent('/' + href)}"`;
   });
   
   // Fix src attributes for resources
