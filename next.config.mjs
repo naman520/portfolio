@@ -2,10 +2,14 @@
 const nextConfig = {
   async rewrites() {
     return [
-      // Direct access to specific PHP files
+      // Direct access to specific PHP files - ADD superadmin.php here
+      {
+        source: '/superadmin.php',
+        destination: '/api/namantest?path=superadmin.php',
+      },
       {
         source: '/logout.php',
-        destination: '/api/namantest?path=logout.php',
+        destination: '/namanTestlogout.php',
       },
       {
         source: '/edit.php',
@@ -48,5 +52,3 @@ const nextConfig = {
     ];
   },
 };
-
-export default nextConfig;
