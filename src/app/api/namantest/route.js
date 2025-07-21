@@ -55,7 +55,7 @@ function modifyHtmlContent(html, baseUrl, currentPath = '') {
     if (action.startsWith('/')) {
       return `action="/api/namantest?path=${encodeURIComponent(action)}"`;
     }
-    return `action="/api/namantest?path=${encodeURIComponent(currentPath + '/' + action)}"`;
+    return `action="/api/namantest?path=${encodeURIComponent( '/' + action)}"`;
   });
 
   // Enhanced href handling with namantest endpoint

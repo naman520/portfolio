@@ -1,11 +1,7 @@
 const nextConfig = {
   async rewrites() {
     return [
-      // Direct access to specific PHP files for namantest
-      {
-        source: '/superadmin.php',
-        destination: '/api/namantest?path=superadmin.php',
-      },
+      // Direct access to specific PHP files
       {
         source: '/logout.php',
         destination: '/api/namantest?path=logout.php',
@@ -22,7 +18,7 @@ const nextConfig = {
         source: '/dashboard.php',
         destination: '/api/namantest?path=dashboard.php',
       },
-      // General rewrite for namantest-Beta paths (keep for backward compatibility)
+      // General rewrite for namantest-Beta paths
       {
         source: '/namantest-Beta/:path*',
         destination: '/api/namantest?path=:path*',
@@ -31,16 +27,6 @@ const nextConfig = {
       {
         source: '/namantest',
         destination: '/api/namantest',
-      },
-      // Default namantest access
-      {
-        source: '/namantest',
-        destination: '/api/namantest',
-      },
-      // Catch remaining paths under /api/namantest (keep this last)
-      {
-        source: '/api/namantest/:path*',
-        destination: '/api/namantest?path=:path*',
       },
       // Catch remaining paths under /api/namantest (keep this last)
       {
