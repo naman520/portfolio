@@ -9,7 +9,7 @@ const nextConfig = {
       },
       {
         source: '/logout.php',
-        destination: '/namanTestlogout.php',
+        destination: '/namanTest/logout.php',
       },
       {
         source: '/edit.php',
