@@ -46,7 +46,7 @@ function extractSetCookies(response) {
 function modifyHtmlContent(html, baseUrl, currentPath = '') {
   let modifiedHtml = html;
   
-  // Enhanced form action handling
+  // Enhanced form action handling with namantest endpoint
   modifiedHtml = modifiedHtml.replace(/action="([^"]*?)"/gi, (match, action) => {
     if (action.startsWith('http') || action.startsWith('//')) return match;
     if (action === '' || action === '.') {
@@ -58,7 +58,7 @@ function modifyHtmlContent(html, baseUrl, currentPath = '') {
     return `action="/api/namantest?path=${encodeURIComponent(currentPath + '/' + action)}"`;
   });
 
-  // Enhanced href handling
+  // Enhanced href handling with namantest endpoint
   modifiedHtml = modifiedHtml.replace(/href="([^"]*?)"/gi, (match, href) => {
     if (href.startsWith('http') || href.startsWith('#') || 
         href.startsWith('mailto:') || href.startsWith('javascript:')) {
@@ -70,7 +70,7 @@ function modifyHtmlContent(html, baseUrl, currentPath = '') {
     if (href === '' || href === '.') {
       return `href="/api/namantest?path=${encodeURIComponent(currentPath)}"`;
     }
-    return `href="/api/namantest?path=${encodeURIComponent('/' + href)}"`;
+    return `href="/api/namantest?path=${encodeURIComponent(currentPath + '/' + href)}"`;
   });
   
   // Fix src attributes for resources
@@ -99,9 +99,9 @@ function modifyHtmlContent(html, baseUrl, currentPath = '') {
   return modifiedHtml;
 }
 
-// FIXED: Helper to construct target URL with better PHP file handling
+// Helper to construct target URL with better PHP file handling
 function constructTargetUrl(path) {
-  console.log('Input path:', path); // Debug log
+  console.log('NamanTest - Input path:', path);
   
   // Handle empty or root path
   if (!path || path === '/' || path === '') {
@@ -111,30 +111,30 @@ function constructTargetUrl(path) {
   // Remove leading slash if present for processing
   let cleanPath = path.startsWith('/') ? path.slice(1) : path;
   
-  // Handle direct PHP files (logout.php, edit.php, etc.)
+  // Handle direct PHP files (superadmin.php, logout.php, edit.php, etc.)
   if (cleanPath.endsWith('.php')) {
     const finalUrl = `${BASE_URL}/${cleanPath}`;
-    console.log('PHP file URL:', finalUrl); // Debug log
+    console.log('NamanTest - PHP file URL:', finalUrl);
     return finalUrl;
   }
   
   // Handle paths that already include the base path
   if (path.startsWith(TARGET_BASE_PATH)) {
     const finalUrl = `${TARGET_DOMAIN}${path}`;
-    console.log('Full path URL:', finalUrl); // Debug log
+    console.log('NamanTest - Full path URL:', finalUrl);
     return finalUrl;
   }
   
   // Handle paths starting with /namanTest/ directly
   if (path.startsWith('/namanTest/')) {
     const finalUrl = `${TARGET_DOMAIN}${path}`;
-    console.log('namanTest path URL:', finalUrl); // Debug log
+    console.log('NamanTest - namanTest path URL:', finalUrl);
     return finalUrl;
   }
 
   // For other paths, append to base URL
   const finalUrl = `${BASE_URL}/${cleanPath}`;
-  console.log('Default constructed URL:', finalUrl); // Debug log
+  console.log('NamanTest - Default constructed URL:', finalUrl);
   return finalUrl;
 }
 
@@ -142,10 +142,10 @@ export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
     const requestedPath = searchParams.get('path') || '/';
-    console.log('GET Request - Path:', requestedPath);
+    console.log('NamanTest GET Request - Path:', requestedPath);
     
     const targetUrl = constructTargetUrl(requestedPath);
-    console.log('GET - Final Target URL:', targetUrl);
+    console.log('NamanTest GET - Final Target URL:', targetUrl);
     
     const targetHeaders = { ...commonHeaders };
     
@@ -166,13 +166,13 @@ export async function GET(req) {
       redirect: 'manual', // Handle redirects manually
     });
 
-    console.log('Response status:', res.status); // Debug log
+    console.log('NamanTest Response status:', res.status);
 
     // Handle redirects
     if (res.status >= 300 && res.status < 400) {
       const location = res.headers.get('location');
       if (location) {
-        console.log('Redirect detected:', location);
+        console.log('NamanTest Redirect detected:', location);
         
         // Convert the redirect location to our proxy format
         let redirectPath;
@@ -227,7 +227,7 @@ export async function GET(req) {
       headers: responseHeaders,
     });
   } catch (error) {
-    console.error('GET Proxy Error:', error);
+    console.error('NamanTest GET Proxy Error:', error);
     return new Response(`Proxy Error: ${error.message}`, { status: 500 });
   }
 }
@@ -239,9 +239,9 @@ export async function POST(req) {
     const requestedPath = searchParams.get('path') || '/';
     const targetUrl = constructTargetUrl(requestedPath);
     
-    console.log('POST Request - Path:', requestedPath);
-    console.log('POST - Final Target URL:', targetUrl);
-    console.log('POST Body:', body);
+    console.log('NamanTest POST Request - Path:', requestedPath);
+    console.log('NamanTest POST - Final Target URL:', targetUrl);
+    console.log('NamanTest POST Body:', body);
 
     const targetHeaders = {
       ...commonHeaders,
@@ -269,13 +269,13 @@ export async function POST(req) {
       redirect: 'manual', // Handle redirects manually
     });
 
-    console.log('POST Response status:', res.status); // Debug log
+    console.log('NamanTest POST Response status:', res.status);
 
     // Handle redirects (common after login)
     if (res.status >= 300 && res.status < 400) {
       const location = res.headers.get('location');
       if (location) {
-        console.log('POST Redirect detected:', location);
+        console.log('NamanTest POST Redirect detected:', location);
         
         let redirectPath;
         if (location.startsWith('http')) {
@@ -326,7 +326,7 @@ export async function POST(req) {
       headers: responseHeaders,
     });
   } catch (error) {
-    console.error('POST Proxy Error:', error);
+    console.error('NamanTest POST Proxy Error:', error);
     return new Response(`Proxy Error: ${error.message}`, { status: 500 });
   }
 }
@@ -347,8 +347,8 @@ async function handleOtherMethods(req, method) {
     const requestedPath = searchParams.get('path') || '/';
     const targetUrl = constructTargetUrl(requestedPath);
 
-    console.log(`${method} Request - Path:`, requestedPath);
-    console.log(`${method} - Final Target URL:`, targetUrl);
+    console.log(`NamanTest ${method} Request - Path:`, requestedPath);
+    console.log(`NamanTest ${method} - Final Target URL:`, targetUrl);
 
     const targetHeaders = { ...commonHeaders };
     
@@ -372,7 +372,7 @@ async function handleOtherMethods(req, method) {
 
     const res = await fetch(targetUrl, fetchOptions);
     
-    console.log(`${method} Response status:`, res.status); // Debug log
+    console.log(`NamanTest ${method} Response status:`, res.status);
     
     // Handle redirects
     if (res.status >= 300 && res.status < 400) {
@@ -418,7 +418,7 @@ async function handleOtherMethods(req, method) {
       headers: responseHeaders,
     });
   } catch (error) {
-    console.error(`${method} Proxy Error:`, error);
+    console.error(`NamanTest ${method} Proxy Error:`, error);
     return new Response(`Proxy Error: ${error.message}`, { status: 500 });
   }
 }
