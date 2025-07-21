@@ -1,8 +1,8 @@
-// app/api/namantest/route.js
+// app/api/landx/route.js
 
 const TARGET_DOMAIN = 'https://bigbucket.online';
 const TARGET_BASE_PATH = '/namanTest';
-const TARGET_URL = `${TARGET_DOMAIN}${TARGET_BASE_PATH}/dashboard.php`; // Start with login.php
+const TARGET_URL = `${TARGET_DOMAIN}${TARGET_BASE_PATH}/dashboard.php`; // Default fallback
 const BASE_URL = `${TARGET_DOMAIN}${TARGET_BASE_PATH}`;
 
 const commonHeaders = {
@@ -46,30 +46,31 @@ function extractSetCookies(response) {
 function modifyHtmlContent(html, baseUrl, currentPath = '') {
   let modifiedHtml = html;
   
-  // Fix form actions
-  modifiedHtml = modifiedHtml.replace(/action="([^"]*?)"/g, (match, action) => {
-    if (action.startsWith('http')) return match;
+  // Enhanced form action handling
+  modifiedHtml = modifiedHtml.replace(/action="([^"]*?)"/gi, (match, action) => {
+    if (action.startsWith('http') || action.startsWith('//')) return match;
     if (action === '' || action === '.') {
-      return `action="/api/namantest${currentPath}"`;
+      return `action="/api/landx${currentPath}"`;
     }
     if (action.startsWith('/')) {
-      return `action="/api/namantest?path=${encodeURIComponent(action)}"`;
+      return `action="/api/landx?path=${encodeURIComponent(action)}"`;
     }
-    return `action="/api/namantest?path=${encodeURIComponent('/' + action)}"`;
+    return `action="/api/landx?path=${encodeURIComponent(currentPath + '/' + action)}"`;
   });
-  
-  // Fix href links
-  modifiedHtml = modifiedHtml.replace(/href="([^"]*?)"/g, (match, href) => {
-    if (href.startsWith('http') || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('javascript:')) {
+
+  // Enhanced href handling
+  modifiedHtml = modifiedHtml.replace(/href="([^"]*?)"/gi, (match, href) => {
+    if (href.startsWith('http') || href.startsWith('#') || 
+        href.startsWith('mailto:') || href.startsWith('javascript:')) {
       return match;
     }
     if (href.startsWith('/')) {
-      return `href="/api/namantest?path=${encodeURIComponent(href)}"`;
+      return `href="/api/landx?path=${encodeURIComponent(href)}"`;
     }
     if (href === '' || href === '.') {
-      return `href="/api/namantest"`;
+      return `href="/api/landx?path=${encodeURIComponent(currentPath)}"`;
     }
-    return `href="/api/namantest?path=${encodeURIComponent('/' + href)}"`;
+    return `href="/api/landx?path=${encodeURIComponent(currentPath + '/' + href)}"`;
   });
   
   // Fix src attributes for resources
@@ -98,30 +99,53 @@ function modifyHtmlContent(html, baseUrl, currentPath = '') {
   return modifiedHtml;
 }
 
-// Helper to construct target URL
+// FIXED: Helper to construct target URL with better PHP file handling
 function constructTargetUrl(path) {
-  if (!path || path === '/') {
-    return TARGET_URL; // Default to login.php
+  console.log('Input path:', path); // Debug log
+  
+  // Handle empty or root path
+  if (!path || path === '/' || path === '') {
+    return TARGET_URL; // Default to dashboard.php
+  }
+
+  // Remove leading slash if present for processing
+  let cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  
+  // Handle direct PHP files (logout.php, edit.php, etc.)
+  if (cleanPath.endsWith('.php')) {
+    const finalUrl = `${BASE_URL}/${cleanPath}`;
+    console.log('PHP file URL:', finalUrl); // Debug log
+    return finalUrl;
   }
   
-  // Remove leading slash if present
-  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-  
-  // If it's a full path starting with the base path, use it directly
+  // Handle paths that already include the base path
   if (path.startsWith(TARGET_BASE_PATH)) {
-    return `${TARGET_DOMAIN}${path}`;
+    const finalUrl = `${TARGET_DOMAIN}${path}`;
+    console.log('Full path URL:', finalUrl); // Debug log
+    return finalUrl;
   }
   
-  return `${BASE_URL}/${cleanPath}`;
+  // Handle paths starting with /namanTest/ directly
+  if (path.startsWith('/namanTest/')) {
+    const finalUrl = `${TARGET_DOMAIN}${path}`;
+    console.log('namanTest path URL:', finalUrl); // Debug log
+    return finalUrl;
+  }
+
+  // For other paths, append to base URL
+  const finalUrl = `${BASE_URL}/${cleanPath}`;
+  console.log('Default constructed URL:', finalUrl); // Debug log
+  return finalUrl;
 }
 
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
     const requestedPath = searchParams.get('path') || '/';
-    const targetUrl = constructTargetUrl(requestedPath);
+    console.log('GET Request - Path:', requestedPath);
     
-    console.log('GET Request - Target URL:', targetUrl);
+    const targetUrl = constructTargetUrl(requestedPath);
+    console.log('GET - Final Target URL:', targetUrl);
     
     const targetHeaders = { ...commonHeaders };
     
@@ -141,6 +165,8 @@ export async function GET(req) {
       headers: targetHeaders,
       redirect: 'manual', // Handle redirects manually
     });
+
+    console.log('Response status:', res.status); // Debug log
 
     // Handle redirects
     if (res.status >= 300 && res.status < 400) {
@@ -163,7 +189,7 @@ export async function GET(req) {
         const setCookies = extractSetCookies(res);
         
         const responseHeaders = {
-          'Location': `/api/namantest?path=${encodeURIComponent(redirectPath)}`,
+          'Location': `/api/landx?path=${encodeURIComponent(redirectPath)}`,
           'Cache-Control': 'no-cache, no-store, must-revalidate',
         };
         
@@ -213,7 +239,8 @@ export async function POST(req) {
     const requestedPath = searchParams.get('path') || '/';
     const targetUrl = constructTargetUrl(requestedPath);
     
-    console.log('POST Request - Target URL:', targetUrl);
+    console.log('POST Request - Path:', requestedPath);
+    console.log('POST - Final Target URL:', targetUrl);
     console.log('POST Body:', body);
 
     const targetHeaders = {
@@ -242,6 +269,8 @@ export async function POST(req) {
       redirect: 'manual', // Handle redirects manually
     });
 
+    console.log('POST Response status:', res.status); // Debug log
+
     // Handle redirects (common after login)
     if (res.status >= 300 && res.status < 400) {
       const location = res.headers.get('location');
@@ -259,7 +288,7 @@ export async function POST(req) {
         const setCookies = extractSetCookies(res);
         
         const responseHeaders = {
-          'Location': `/api/namantest?path=${encodeURIComponent(redirectPath)}`,
+          'Location': `/api/landx?path=${encodeURIComponent(redirectPath)}`,
           'Cache-Control': 'no-cache, no-store, must-revalidate',
         };
         
@@ -318,6 +347,9 @@ async function handleOtherMethods(req, method) {
     const requestedPath = searchParams.get('path') || '/';
     const targetUrl = constructTargetUrl(requestedPath);
 
+    console.log(`${method} Request - Path:`, requestedPath);
+    console.log(`${method} - Final Target URL:`, targetUrl);
+
     const targetHeaders = { ...commonHeaders };
     
     if (body && method !== 'DELETE') {
@@ -340,6 +372,8 @@ async function handleOtherMethods(req, method) {
 
     const res = await fetch(targetUrl, fetchOptions);
     
+    console.log(`${method} Response status:`, res.status); // Debug log
+    
     // Handle redirects
     if (res.status >= 300 && res.status < 400) {
       const location = res.headers.get('location');
@@ -354,7 +388,7 @@ async function handleOtherMethods(req, method) {
         
         const setCookies = extractSetCookies(res);
         const responseHeaders = {
-          'Location': `/api/namantest?path=${encodeURIComponent(redirectPath)}`,
+          'Location': `/api/landx?path=${encodeURIComponent(redirectPath)}`,
         };
         
         if (setCookies.length > 0) {
