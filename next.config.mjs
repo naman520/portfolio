@@ -2,41 +2,37 @@
 const nextConfig = {
   async rewrites() {
     return [
-      // Direct access to specific PHP files - ADD superadmin.php here
-      {
-        source: '/superadmin.php',
-        destination: '/api/namantest?path=superadmin.php',
-      },
+      // Direct access to specific PHP files
       {
         source: '/logout.php',
-        destination: '/api/namantest?path=logout.php',
+        destination: '/api/landx?path=logout.php',
       },
       {
         source: '/edit.php',
-        destination: '/api/namantest?path=edit.php',
+        destination: '/api/landx?path=edit.php',
       },
       {
         source: '/login.php', 
-        destination: '/api/namantest?path=login.php',
+        destination: '/api/landx?path=login.php',
       },
       {
         source: '/dashboard.php',
-        destination: '/api/namantest?path=dashboard.php',
+        destination: '/api/landx?path=dashboard.php',
       },
-      // General rewrite for namantest-Beta paths
+      // General rewrite for LandX-Beta paths
       {
-        source: '/namantest-Beta/:path*',
-        destination: '/api/namantest?path=:path*',
+        source: '/LandX-Beta/:path*',
+        destination: '/api/landx?path=:path*',
       },
-      // Default namantest access
+      // Default landx access
       {
-        source: '/namantest',
-        destination: '/api/namantest',
+        source: '/landx',
+        destination: '/api/landx',
       },
-      // Catch remaining paths under /api/namantest (keep this last)
+      // Catch remaining paths under /api/landx (keep this last)
       {
-        source: '/api/namantest/:path*',
-        destination: '/api/namantest?path=:path*',
+        source: '/api/landx/:path*',
+        destination: '/api/landx?path=:path*',
       },
     ];
   },
@@ -51,4 +47,7 @@ const nextConfig = {
       },
     ];
   },
+  
 };
+
+export default nextConfig;
