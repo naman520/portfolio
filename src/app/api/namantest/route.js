@@ -48,6 +48,7 @@ function modifyHtmlContent(html, baseUrl, currentPath = '') {
   
   // Enhanced form action handling
   modifiedHtml = modifiedHtml.replace(/action="([^"]*?)"/gi, (match, action) => {
+    console.log('Processing form action:', action);
     if (action.startsWith('http') || action.startsWith('//')) return match;
     if (action === '' || action === '.') {
       return `action="/api/namantest${currentPath}"`;
@@ -55,7 +56,7 @@ function modifyHtmlContent(html, baseUrl, currentPath = '') {
     if (action.startsWith('/')) {
       return `action="/api/namantest?path=${encodeURIComponent(action)}"`;
     }
-    // Fix: Handle relative paths properly - don't concatenate with current path for PHP files
+    // Handle PHP files directly
     if (action.endsWith('.php')) {
       return `action="/api/namantest?path=${encodeURIComponent(action)}"`;
     }
@@ -64,6 +65,7 @@ function modifyHtmlContent(html, baseUrl, currentPath = '') {
 
   // Enhanced href handling with better PHP file detection
   modifiedHtml = modifiedHtml.replace(/href="([^"]*?)"/gi, (match, href) => {
+    console.log('Processing href:', href);
     if (href.startsWith('http') || href.startsWith('#') || 
         href.startsWith('mailto:') || href.startsWith('javascript:')) {
       return match;
@@ -74,7 +76,7 @@ function modifyHtmlContent(html, baseUrl, currentPath = '') {
     if (href === '' || href === '.') {
       return `href="/api/namantest?path=${encodeURIComponent(currentPath)}"`;
     }
-    // Fix: Handle PHP files directly without concatenating paths
+    // Handle PHP files directly
     if (href.endsWith('.php')) {
       return `href="/api/namantest?path=${encodeURIComponent(href)}"`;
     }
@@ -107,63 +109,63 @@ function modifyHtmlContent(html, baseUrl, currentPath = '') {
   return modifiedHtml;
 }
 
-// FIXED: Helper to construct target URL with better path handling
+// SIMPLIFIED: Helper to construct target URL
 function constructTargetUrl(path) {
-  console.log('Input path:', path); // Debug log
+  console.log('🔍 constructTargetUrl - Input path:', path);
+  console.log('🔍 constructTargetUrl - Raw path type:', typeof path);
   
   // Handle empty or root path
   if (!path || path === '/' || path === '') {
-    return TARGET_URL; // Default to dashboard.php
+    console.log('🔍 Empty path, returning default:', TARGET_URL);
+    return TARGET_URL;
   }
 
-  // Decode the path first to handle encoded URLs
-  let decodedPath;
+  // Decode the path first
+  let decodedPath = path;
   try {
     decodedPath = decodeURIComponent(path);
+    console.log('🔍 Decoded path:', decodedPath);
   } catch (e) {
-    decodedPath = path; // Fallback if decoding fails
+    console.log('🔍 Failed to decode path, using original:', path);
+    decodedPath = path;
   }
-  
-  console.log('Decoded path:', decodedPath); // Debug log
 
-  // Remove leading slash if present for processing
-  let cleanPath = decodedPath.startsWith('/') ? decodedPath.slice(1) : decodedPath;
-  
-  // Handle direct PHP files (logout.php, edit.php, superadmin.php, etc.)
-  if (cleanPath.endsWith('.php')) {
+  // Simple approach - if it's a PHP file, construct directly
+  if (decodedPath.endsWith('.php')) {
+    // Remove leading slash if present
+    const cleanPath = decodedPath.startsWith('/') ? decodedPath.slice(1) : decodedPath;
     const finalUrl = `${BASE_URL}/${cleanPath}`;
-    console.log('PHP file URL:', finalUrl); // Debug log
+    console.log('🔍 PHP file detected, final URL:', finalUrl);
     return finalUrl;
   }
   
-  // Handle paths that already include the base path
-  if (decodedPath.startsWith(TARGET_BASE_PATH)) {
+  // If path starts with /namanTest, use it directly
+  if (decodedPath.startsWith('/namanTest')) {
     const finalUrl = `${TARGET_DOMAIN}${decodedPath}`;
-    console.log('Full path URL:', finalUrl); // Debug log
+    console.log('🔍 namanTest path detected, final URL:', finalUrl);
     return finalUrl;
   }
   
-  // Handle paths starting with /namanTest/ directly
-  if (decodedPath.startsWith('/namanTest/')) {
-    const finalUrl = `${TARGET_DOMAIN}${decodedPath}`;
-    console.log('namanTest path URL:', finalUrl); // Debug log
-    return finalUrl;
-  }
-
   // For other paths, append to base URL
+  const cleanPath = decodedPath.startsWith('/') ? decodedPath.slice(1) : decodedPath;
   const finalUrl = `${BASE_URL}/${cleanPath}`;
-  console.log('Default constructed URL:', finalUrl); // Debug log
+  console.log('🔍 Default construction, final URL:', finalUrl);
   return finalUrl;
 }
 
 export async function GET(req) {
+  console.log('🚀 GET Request started');
+  console.log('🚀 Request URL:', req.url);
+  
   try {
     const { searchParams } = new URL(req.url);
     const requestedPath = searchParams.get('path') || '/';
-    console.log('GET Request - Path:', requestedPath);
+    
+    console.log('📝 GET Request - Requested Path:', requestedPath);
+    console.log('📝 Search params:', Object.fromEntries(searchParams.entries()));
     
     const targetUrl = constructTargetUrl(requestedPath);
-    console.log('GET - Final Target URL:', targetUrl);
+    console.log('🎯 GET - Final Target URL:', targetUrl);
     
     const targetHeaders = { ...commonHeaders };
     
@@ -173,38 +175,41 @@ export async function GET(req) {
     // Set proper referer
     targetHeaders['Referer'] = BASE_URL + '/';
     
-    // Forward other important headers
-    const xRequestedWith = req.headers.get('x-requested-with');
-    if (xRequestedWith) {
-      targetHeaders['X-Requested-With'] = xRequestedWith;
-    }
-
+    console.log('📤 Request headers to target:', targetHeaders);
+    
     const res = await fetch(targetUrl, {
       headers: targetHeaders,
-      redirect: 'manual', // Handle redirects manually
+      redirect: 'manual',
     });
 
-    console.log('Response status:', res.status); // Debug log
-    console.log('Response headers:', Object.fromEntries(res.headers.entries())); // Debug log
+    console.log('📥 Response status:', res.status);
+    console.log('📥 Response headers:', Object.fromEntries(res.headers.entries()));
+
+    // Handle 404 specifically
+    if (res.status === 404) {
+      console.log('❌ Target server returned 404 for:', targetUrl);
+      return new Response(`Target file not found: ${targetUrl}`, { 
+        status: 404,
+        headers: { 'Content-Type': 'text/plain' }
+      });
+    }
 
     // Handle redirects
     if (res.status >= 300 && res.status < 400) {
       const location = res.headers.get('location');
       if (location) {
-        console.log('Redirect detected:', location);
+        console.log('🔄 Redirect detected:', location);
         
-        // Convert the redirect location to our proxy format
         let redirectPath;
         if (location.startsWith('http')) {
-          // Absolute URL - extract the path
           const url = new URL(location);
           redirectPath = url.pathname + url.search + url.hash;
         } else {
-          // Relative URL
           redirectPath = location;
         }
         
-        // Extract and forward cookies from redirect response
+        console.log('🔄 Redirect path:', redirectPath);
+        
         const setCookies = extractSetCookies(res);
         
         const responseHeaders = {
@@ -224,9 +229,10 @@ export async function GET(req) {
     }
 
     const html = await res.text();
+    console.log('📄 Received HTML length:', html.length);
+    
     const modifiedHtml = modifyHtmlContent(html, BASE_URL, requestedPath);
     
-    // Extract cookies from target response
     const setCookies = extractSetCookies(res);
     
     const responseHeaders = {
@@ -236,31 +242,37 @@ export async function GET(req) {
       'Expires': '0',
     };
     
-    // Forward set-cookie headers
     if (setCookies.length > 0) {
       responseHeaders['Set-Cookie'] = setCookies;
     }
 
+    console.log('✅ GET Request completed successfully');
+    
     return new Response(modifiedHtml, {
       status: res.status,
       headers: responseHeaders,
     });
   } catch (error) {
-    console.error('GET Proxy Error:', error);
+    console.error('💥 GET Proxy Error:', error);
+    console.error('💥 Error stack:', error.stack);
     return new Response(`Proxy Error: ${error.message}`, { status: 500 });
   }
 }
 
 export async function POST(req) {
+  console.log('🚀 POST Request started');
+  console.log('🚀 Request URL:', req.url);
+  
   try {
     const body = await req.text();
     const { searchParams } = new URL(req.url);
     const requestedPath = searchParams.get('path') || '/';
-    const targetUrl = constructTargetUrl(requestedPath);
     
-    console.log('POST Request - Path:', requestedPath);
-    console.log('POST - Final Target URL:', targetUrl);
-    console.log('POST Body:', body);
+    console.log('📝 POST Request - Requested Path:', requestedPath);
+    console.log('📝 POST Body:', body);
+    
+    const targetUrl = constructTargetUrl(requestedPath);
+    console.log('🎯 POST - Final Target URL:', targetUrl);
 
     const targetHeaders = {
       ...commonHeaders,
@@ -268,33 +280,35 @@ export async function POST(req) {
       'Content-Length': Buffer.byteLength(body).toString(),
     };
 
-    // Forward cookies from client
     forwardCookies(req, targetHeaders);
-    
-    // Set proper referer and origin for forms
     targetHeaders['Referer'] = BASE_URL + '/';
     targetHeaders['Origin'] = BASE_URL;
     
-    // Forward X-Requested-With for AJAX requests
-    const xRequestedWith = req.headers.get('x-requested-with');
-    if (xRequestedWith) {
-      targetHeaders['X-Requested-With'] = xRequestedWith;
-    }
+    console.log('📤 POST headers to target:', targetHeaders);
 
     const res = await fetch(targetUrl, {
       method: 'POST',
       headers: targetHeaders,
       body,
-      redirect: 'manual', // Handle redirects manually
+      redirect: 'manual',
     });
 
-    console.log('POST Response status:', res.status); // Debug log
+    console.log('📥 POST Response status:', res.status);
 
-    // Handle redirects (common after login)
+    // Handle 404 specifically
+    if (res.status === 404) {
+      console.log('❌ Target server returned 404 for POST:', targetUrl);
+      return new Response(`Target file not found: ${targetUrl}`, { 
+        status: 404,
+        headers: { 'Content-Type': 'text/plain' }
+      });
+    }
+
+    // Handle redirects
     if (res.status >= 300 && res.status < 400) {
       const location = res.headers.get('location');
       if (location) {
-        console.log('POST Redirect detected:', location);
+        console.log('🔄 POST Redirect detected:', location);
         
         let redirectPath;
         if (location.startsWith('http')) {
@@ -325,7 +339,6 @@ export async function POST(req) {
     const html = await res.text();
     const modifiedHtml = modifyHtmlContent(html, BASE_URL, requestedPath);
     
-    // Extract cookies from target response
     const setCookies = extractSetCookies(res);
     
     const responseHeaders = {
@@ -335,22 +348,24 @@ export async function POST(req) {
       'Expires': '0',
     };
     
-    // Forward set-cookie headers to maintain session
     if (setCookies.length > 0) {
       responseHeaders['Set-Cookie'] = setCookies;
     }
+
+    console.log('✅ POST Request completed successfully');
 
     return new Response(modifiedHtml, {
       status: res.status,
       headers: responseHeaders,
     });
   } catch (error) {
-    console.error('POST Proxy Error:', error);
+    console.error('💥 POST Proxy Error:', error);
+    console.error('💥 Error stack:', error.stack);
     return new Response(`Proxy Error: ${error.message}`, { status: 500 });
   }
 }
 
-// Keep the other HTTP methods simple for now
+// Simplified other methods
 export async function PUT(req) {
   return handleOtherMethods(req, 'PUT');
 }
@@ -360,14 +375,16 @@ export async function DELETE(req) {
 }
 
 async function handleOtherMethods(req, method) {
+  console.log(`🚀 ${method} Request started`);
+  
   try {
     const body = method !== 'DELETE' ? await req.text() : undefined;
     const { searchParams } = new URL(req.url);
     const requestedPath = searchParams.get('path') || '/';
     const targetUrl = constructTargetUrl(requestedPath);
 
-    console.log(`${method} Request - Path:`, requestedPath);
-    console.log(`${method} - Final Target URL:`, targetUrl);
+    console.log(`📝 ${method} Request - Path:`, requestedPath);
+    console.log(`🎯 ${method} - Final Target URL:`, targetUrl);
 
     const targetHeaders = { ...commonHeaders };
     
@@ -391,7 +408,16 @@ async function handleOtherMethods(req, method) {
 
     const res = await fetch(targetUrl, fetchOptions);
     
-    console.log(`${method} Response status:`, res.status); // Debug log
+    console.log(`📥 ${method} Response status:`, res.status);
+    
+    // Handle 404 specifically
+    if (res.status === 404) {
+      console.log(`❌ Target server returned 404 for ${method}:`, targetUrl);
+      return new Response(`Target file not found: ${targetUrl}`, { 
+        status: 404,
+        headers: { 'Content-Type': 'text/plain' }
+      });
+    }
     
     // Handle redirects
     if (res.status >= 300 && res.status < 400) {
@@ -432,12 +458,14 @@ async function handleOtherMethods(req, method) {
       responseHeaders['Set-Cookie'] = setCookies;
     }
 
+    console.log(`✅ ${method} Request completed successfully`);
+
     return new Response(responseText, {
       status: res.status,
       headers: responseHeaders,
     });
   } catch (error) {
-    console.error(`${method} Proxy Error:`, error);
+    console.error(`💥 ${method} Proxy Error:`, error);
     return new Response(`Proxy Error: ${error.message}`, { status: 500 });
   }
 }

@@ -2,7 +2,12 @@
 const nextConfig = {
   async rewrites() {
     return [
-      // Direct access to specific PHP files (most specific first)
+      // Test the basic API route first
+      {
+        source: '/test-api',
+        destination: '/api/namantest?path=dashboard.php',
+      },
+      // Direct access to specific PHP files
       {
         source: '/logout.php',
         destination: '/api/namantest?path=logout.php',
@@ -22,21 +27,6 @@ const nextConfig = {
       {
         source: '/dashboard.php',
         destination: '/api/namantest?path=dashboard.php',
-      },
-      // Handle any other PHP files
-      {
-        source: '/:file.php',
-        destination: '/api/namantest?path=:file.php',
-      },
-      // General rewrite for namantest-Beta paths
-      {
-        source: '/namantest-Beta/:path*',
-        destination: '/api/namantest?path=:path*',
-      },
-      // General rewrite for namanTest paths (note the capital T)
-      {
-        source: '/namanTest/:path*',
-        destination: '/api/namantest?path=/namanTest/:path*',
       },
       // Default namantest access
       {
