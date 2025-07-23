@@ -55,10 +55,14 @@ function modifyHtmlContent(html, baseUrl, currentPath = '') {
     if (action.startsWith('/')) {
       return `action="/api/namantest?path=${encodeURIComponent(action)}"`;
     }
+    // Fix: Handle relative paths properly - don't concatenate with current path for PHP files
+    if (action.endsWith('.php')) {
+      return `action="/api/namantest?path=${encodeURIComponent(action)}"`;
+    }
     return `action="/api/namantest?path=${encodeURIComponent(currentPath + '/' + action)}"`;
   });
 
-  // Enhanced href handling
+  // Enhanced href handling with better PHP file detection
   modifiedHtml = modifiedHtml.replace(/href="([^"]*?)"/gi, (match, href) => {
     if (href.startsWith('http') || href.startsWith('#') || 
         href.startsWith('mailto:') || href.startsWith('javascript:')) {
@@ -69,6 +73,10 @@ function modifyHtmlContent(html, baseUrl, currentPath = '') {
     }
     if (href === '' || href === '.') {
       return `href="/api/namantest?path=${encodeURIComponent(currentPath)}"`;
+    }
+    // Fix: Handle PHP files directly without concatenating paths
+    if (href.endsWith('.php')) {
+      return `href="/api/namantest?path=${encodeURIComponent(href)}"`;
     }
     return `href="/api/namantest?path=${encodeURIComponent(currentPath + '/' + href)}"`;
   });
@@ -99,7 +107,7 @@ function modifyHtmlContent(html, baseUrl, currentPath = '') {
   return modifiedHtml;
 }
 
-// FIXED: Helper to construct target URL with better PHP file handling
+// FIXED: Helper to construct target URL with better path handling
 function constructTargetUrl(path) {
   console.log('Input path:', path); // Debug log
   
@@ -108,10 +116,20 @@ function constructTargetUrl(path) {
     return TARGET_URL; // Default to dashboard.php
   }
 
-  // Remove leading slash if present for processing
-  let cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  // Decode the path first to handle encoded URLs
+  let decodedPath;
+  try {
+    decodedPath = decodeURIComponent(path);
+  } catch (e) {
+    decodedPath = path; // Fallback if decoding fails
+  }
   
-  // Handle direct PHP files (logout.php, edit.php, etc.)
+  console.log('Decoded path:', decodedPath); // Debug log
+
+  // Remove leading slash if present for processing
+  let cleanPath = decodedPath.startsWith('/') ? decodedPath.slice(1) : decodedPath;
+  
+  // Handle direct PHP files (logout.php, edit.php, superadmin.php, etc.)
   if (cleanPath.endsWith('.php')) {
     const finalUrl = `${BASE_URL}/${cleanPath}`;
     console.log('PHP file URL:', finalUrl); // Debug log
@@ -119,15 +137,15 @@ function constructTargetUrl(path) {
   }
   
   // Handle paths that already include the base path
-  if (path.startsWith(TARGET_BASE_PATH)) {
-    const finalUrl = `${TARGET_DOMAIN}${path}`;
+  if (decodedPath.startsWith(TARGET_BASE_PATH)) {
+    const finalUrl = `${TARGET_DOMAIN}${decodedPath}`;
     console.log('Full path URL:', finalUrl); // Debug log
     return finalUrl;
   }
   
   // Handle paths starting with /namanTest/ directly
-  if (path.startsWith('/namanTest/')) {
-    const finalUrl = `${TARGET_DOMAIN}${path}`;
+  if (decodedPath.startsWith('/namanTest/')) {
+    const finalUrl = `${TARGET_DOMAIN}${decodedPath}`;
     console.log('namanTest path URL:', finalUrl); // Debug log
     return finalUrl;
   }
@@ -167,6 +185,7 @@ export async function GET(req) {
     });
 
     console.log('Response status:', res.status); // Debug log
+    console.log('Response headers:', Object.fromEntries(res.headers.entries())); // Debug log
 
     // Handle redirects
     if (res.status >= 300 && res.status < 400) {
